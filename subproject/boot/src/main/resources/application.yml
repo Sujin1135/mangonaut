@@ -1,0 +1,63 @@
+spring:
+  application:
+    name: mangonaut
+
+# Mangonaut Configuration
+mangonaut:
+  # Error Source Configuration (Sentry)
+  sentry:
+    base-url: https://sentry.io
+    org: ${MANGONAUT_SENTRY_ORG:}
+    token: ${MANGONAUT_SENTRY_TOKEN:}
+    webhook-secret: ${MANGONAUT_WEBHOOK_SECRET:}
+
+  # SCM Provider Configuration (GitHub)
+  github:
+    base-url: https://api.github.com
+    token: ${MANGONAUT_GITHUB_TOKEN:}
+
+  # LLM Provider Configuration (Claude)
+  llm:
+    provider: claude
+    model: claude-sonnet-4-20250514
+    api-key: ${MANGONAUT_LLM_API_KEY:}
+    base-url: https://api.anthropic.com
+
+  # Project Mappings
+  # projects:
+  #   - source-project: my-backend
+  #     scm-repo: org/backend-api
+  #     source-root: src/main/kotlin/
+  #     default-branch: main
+
+  # Behavior Configuration
+  behavior:
+    auto-pr: true
+    min-confidence: MEDIUM
+    labels:
+      - auto-fix
+      - ai-generated
+    branch-prefix: fix/mangonaut-
+    dry-run: false
+
+# Server Configuration
+server:
+  port: 8080
+
+# Actuator Configuration
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info, metrics
+  endpoint:
+    health:
+      show-details: when_authorized
+
+# Logging Configuration
+logging:
+  level:
+    io.autofixer.mangonaut: DEBUG
+    org.springframework.web: INFO
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
