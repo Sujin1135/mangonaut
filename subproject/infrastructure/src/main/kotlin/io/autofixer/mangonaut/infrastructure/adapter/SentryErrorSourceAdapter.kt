@@ -1,5 +1,7 @@
 package io.autofixer.mangonaut.infrastructure.adapter
 
+import com.fasterxml.jackson.annotation.JsonSubTypes
+import com.fasterxml.jackson.annotation.JsonTypeInfo
 import io.autofixer.mangonaut.domain.exception.SentryApiException
 import io.autofixer.mangonaut.domain.model.Breadcrumb
 import io.autofixer.mangonaut.domain.model.ErrorEvent
@@ -132,7 +134,7 @@ data class SentryEventResponse(
     val project: String?,
     val release: String?,
     val tags: List<SentryTag>?,
-    val entries: List<Any>?,
+    val entries: List<SentryEntry>?,
     val request: SentryRequest?,
 )
 
@@ -141,10 +143,31 @@ data class SentryTag(
     val value: String,
 )
 
+@JsonTypeInfo(
+    use = JsonTypeInfo.Id.NAME,
+    include = JsonTypeInfo.As.EXISTING_PROPERTY,
+    property = "type",
+    defaultImpl = SentryUnknownEntry::class,
+)
+@JsonSubTypes(
+    JsonSubTypes.Type(value = SentryExceptionEntry::class, name = "exception"),
+    JsonSubTypes.Type(value = SentryBreadcrumbEntry::class, name = "breadcrumbs"),
+)
+sealed interface SentryEntry
+
 data class SentryExceptionEntry(
     val type: String,
     val data: SentryExceptionData,
-)
+) : SentryEntry
+
+data class SentryBreadcrumbEntry(
+    val type: String,
+    val data: SentryBreadcrumbData,
+) : SentryEntry
+
+data class SentryUnknownEntry(
+    val type: String? = null,
+) : SentryEntry
 
 data class SentryExceptionData(
     val values: List<SentryException>?,
@@ -169,11 +192,6 @@ data class SentryStackFrame(
     val contextLine: String?,
     val postContext: List<String>?,
     val inApp: Boolean?,
-)
-
-data class SentryBreadcrumbEntry(
-    val type: String,
-    val data: SentryBreadcrumbData,
 )
 
 data class SentryBreadcrumbData(
