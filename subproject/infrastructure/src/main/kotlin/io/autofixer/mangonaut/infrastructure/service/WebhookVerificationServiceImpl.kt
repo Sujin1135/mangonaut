@@ -7,7 +7,7 @@ import javax.crypto.Mac
 import javax.crypto.spec.SecretKeySpec
 
 /**
- * Webhook 서명 검증 서비스 구현체
+ * Webhook signature verification service implementation.
  */
 @Service
 class WebhookVerificationServiceImpl(
@@ -16,7 +16,7 @@ class WebhookVerificationServiceImpl(
 
     override fun verifySentrySignature(payload: String, signature: String): Boolean {
         if (properties.sentry.webhookSecret.isBlank()) {
-            // 개발 환경에서 시크릿이 설정되지 않은 경우 검증 건너뜀
+            // Skip verification when secret is not configured (development environment)
             return true
         }
 

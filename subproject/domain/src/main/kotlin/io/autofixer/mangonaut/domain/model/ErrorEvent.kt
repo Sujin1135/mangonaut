@@ -3,7 +3,7 @@ package io.autofixer.mangonaut.domain.model
 import java.time.Instant
 
 /**
- * 에러 소스(Sentry, Datadog 등)에서 수신한 에러 이벤트의 표준화된 도메인 모델
+ * Standardized domain model for error events received from error sources (Sentry, Datadog, etc.).
  */
 data class ErrorEvent(
     val id: Id,
@@ -37,14 +37,14 @@ data class ErrorEvent(
     value class SourceProject(val value: String)
 
     /**
-     * 애플리케이션 코드에서 발생한 스택 프레임만 필터링
+     * Filters only stack frames originating from application code.
      */
     fun applicationStackFrames(): List<StackFrame> =
         stackTrace.filter { it.isApplicationCode() }
 }
 
 /**
- * 스택 트레이스의 개별 프레임
+ * Individual frame within a stack trace.
  */
 data class StackFrame(
     val filename: Filename,
@@ -75,13 +75,13 @@ data class StackFrame(
     value class InApp(val value: Boolean)
 
     /**
-     * 우리 애플리케이션 코드인지 확인 (라이브러리 코드 제외)
+     * Checks whether this frame is application code (excludes library code).
      */
     fun isApplicationCode(): Boolean = inApp.value
 }
 
 /**
- * 에러 발생 전 사용자/시스템 행동 기록
+ * Record of user/system actions before the error occurred.
  */
 data class Breadcrumb(
     val timestamp: Instant,
@@ -105,7 +105,7 @@ data class Breadcrumb(
 }
 
 /**
- * HTTP 요청 컨텍스트 (웹 에러인 경우)
+ * HTTP request context (for web errors).
  */
 data class RequestContext(
     val url: Url?,

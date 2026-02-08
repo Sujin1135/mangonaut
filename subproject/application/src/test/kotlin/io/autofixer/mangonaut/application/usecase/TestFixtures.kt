@@ -10,13 +10,13 @@ import io.autofixer.mangonaut.domain.model.StackFrame
 import java.time.Instant
 
 /**
- * Application 레이어 테스트에서 사용하는 공통 테스트 픽스처
+ * Common test fixtures used in Application layer tests.
  */
 object TestFixtures {
 
     val REPO_ID = RepoId.of("testorg/test-repo")
     const val DEFAULT_BRANCH = "main"
-    const val SOURCE_ROOT = "src/main/kotlin/"
+    val SOURCE_ROOTS = listOf("src/main/kotlin/")
     const val BRANCH_PREFIX = "fix/mangonaut-"
     val LABELS = listOf("auto-fix", "ai-generated")
 

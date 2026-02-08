@@ -3,7 +3,7 @@ package io.autofixer.mangonaut.domain.exception
 import io.autofixer.mangonaut.domain.model.ErrorEvent
 
 /**
- * Mangonaut 애플리케이션의 기본 예외 클래스
+ * Base exception class for the Mangonaut application.
  */
 sealed class MangonautException(
     open val errorCode: ErrorCode,
@@ -12,7 +12,7 @@ sealed class MangonautException(
 ) : RuntimeException(message, cause)
 
 /**
- * Sentry API 관련 예외
+ * Sentry API exception.
  */
 data class SentryApiException(
     override val message: String,
@@ -20,7 +20,7 @@ data class SentryApiException(
 ) : MangonautException(ErrorCode.SENTRY_API_ERROR, message, cause)
 
 /**
- * GitHub API 관련 예외
+ * GitHub API exception.
  */
 data class GitHubApiException(
     override val message: String,
@@ -28,7 +28,7 @@ data class GitHubApiException(
 ) : MangonautException(ErrorCode.GITHUB_API_ERROR, message, cause)
 
 /**
- * LLM API 관련 예외
+ * LLM API exception.
  */
 data class LlmApiException(
     override val message: String,
@@ -36,28 +36,28 @@ data class LlmApiException(
 ) : MangonautException(ErrorCode.LLM_API_ERROR, message, cause)
 
 /**
- * Webhook 검증 실패 예외
+ * Webhook validation failure exception.
  */
 data class WebhookValidationException(
     override val message: String,
 ) : MangonautException(ErrorCode.WEBHOOK_VALIDATION_ERROR, message)
 
 /**
- * 설정 오류 예외
+ * Configuration error exception.
  */
 data class ConfigurationException(
     override val message: String,
 ) : MangonautException(ErrorCode.CONFIGURATION_ERROR, message)
 
 /**
- * 중복 처리 방지 예외 (이미 처리 중인 이슈)
+ * Duplicate processing prevention exception (issue already being processed).
  */
 data class DuplicateProcessingException(
     val issueId: ErrorEvent.Id,
 ) : MangonautException(ErrorCode.DUPLICATE_PROCESSING, "Issue ${issueId.value} is already being processed")
 
 /**
- * 리소스를 찾을 수 없음 예외
+ * Resource not found exception.
  */
 data class ResourceNotFoundException(
     override val message: String,

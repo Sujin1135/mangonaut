@@ -3,9 +3,9 @@ package io.autofixer.mangonaut.presentation.dto
 import com.fasterxml.jackson.annotation.JsonProperty
 
 /**
- * Sentry Webhook 요청 DTO
+ * Sentry Webhook request DTO.
  *
- * Sentry에서 이슈가 발생했을 때 전송되는 webhook payload
+ * Webhook payload sent by Sentry when an issue occurs.
  */
 data class SentryWebhookRequest(
     val action: String,

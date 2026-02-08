@@ -6,7 +6,7 @@ spring:
 mangonaut:
   # Error Source Configuration (Sentry)
   sentry:
-    base-url: https://sentry.io
+    base-url: https://us.sentry.io
     org: ${MANGONAUT_SENTRY_ORG:}
     token: ${MANGONAUT_SENTRY_TOKEN:}
     webhook-secret: ${MANGONAUT_WEBHOOK_SECRET:}
@@ -23,17 +23,10 @@ mangonaut:
     api-key: ${MANGONAUT_LLM_API_KEY:}
     base-url: https://api.anthropic.com
 
-  # Project Mappings
-  # projects:
-  #   - source-project: my-backend
-  #     scm-repo: org/backend-api
-  #     source-root: src/main/kotlin/
-  #     default-branch: main
-
   # Behavior Configuration
   behavior:
     auto-pr: true
-    min-confidence: MEDIUM
+    min-confidence: LOW
     labels:
       - auto-fix
       - ai-generated

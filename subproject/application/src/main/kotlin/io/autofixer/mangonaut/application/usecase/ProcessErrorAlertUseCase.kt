@@ -9,11 +9,11 @@ import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 
 /**
- * 에러 알림 처리 전체 파이프라인을 조율하는 Use Case (Orchestrator)
+ * Use Case that orchestrates the entire error alert processing pipeline.
  *
- * 1. 에러 소스에서 상세 이벤트 조회
- * 2. 에러 분석 수행
- * 3. PR 생성 (설정에 따라)
+ * 1. Fetch detailed event from the error source
+ * 2. Perform error analysis
+ * 3. Create PR (based on configuration)
  */
 @Service
 class ProcessErrorAlertUseCase(
@@ -28,7 +28,7 @@ class ProcessErrorAlertUseCase(
         val sourceProject: ErrorEvent.SourceProject,
         val repoId: RepoId,
         val defaultBranch: String,
-        val sourceRoot: String,
+        val sourceRoots: List<String>,
         val branchPrefix: String,
         val labels: List<String>,
         val minConfidence: Confidence,
@@ -42,22 +42,22 @@ class ProcessErrorAlertUseCase(
     )
 
     /**
-     * 에러 알림을 처리합니다.
+     * Processes an error alert.
      */
     suspend operator fun invoke(params: Params): Result {
         logger.info("Processing error alert: issueId={}, project={}", params.issueId.value, params.sourceProject.value)
 
-        // 1. 에러 상세 조회
+        // 1. Fetch error details
         val errorEvent = errorSourcePort.fetchEvent(params.issueId)
         logger.info("Fetched error event: title={}", errorEvent.title.value)
 
-        // 2. 에러 분석
+        // 2. Analyze error
         val fixResult = analyzeErrorUseCase(
             AnalyzeErrorUseCase.Params(
                 errorEvent = errorEvent,
                 repoId = params.repoId,
                 defaultBranch = params.defaultBranch,
-                sourceRoot = params.sourceRoot,
+                sourceRoots = params.sourceRoots,
             )
         )
         logger.info(
@@ -66,7 +66,7 @@ class ProcessErrorAlertUseCase(
             fixResult.changes.size,
         )
 
-        // 3. PR 생성 (설정에 따라)
+        // 3. Create PR (based on configuration)
         val prResult = if (params.autoPr) {
             createFixPullRequestUseCase(
                 CreateFixPullRequestUseCase.Params(

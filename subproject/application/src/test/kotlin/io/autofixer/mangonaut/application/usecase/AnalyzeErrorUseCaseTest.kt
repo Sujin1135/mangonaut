@@ -36,7 +36,7 @@ class AnalyzeErrorUseCaseTest : BehaviorSpec({
                             errorEvent = errorEvent,
                             repoId = TestFixtures.REPO_ID,
                             defaultBranch = TestFixtures.DEFAULT_BRANCH,
-                            sourceRoot = TestFixtures.SOURCE_ROOT,
+                            sourceRoots = TestFixtures.SOURCE_ROOTS,
                         )
                     )
 
@@ -80,7 +80,7 @@ class AnalyzeErrorUseCaseTest : BehaviorSpec({
                             errorEvent = errorEvent,
                             repoId = TestFixtures.REPO_ID,
                             defaultBranch = TestFixtures.DEFAULT_BRANCH,
-                            sourceRoot = TestFixtures.SOURCE_ROOT,
+                            sourceRoots = TestFixtures.SOURCE_ROOTS,
                         )
                     )
 
@@ -109,15 +109,15 @@ class AnalyzeErrorUseCaseTest : BehaviorSpec({
                     )
                     val fixResult = TestFixtures.createFixResult()
 
-                    // MockK의 eq() 매처는 @JvmInline value class와 호환성 문제가 있어
-                    // slot 캡처를 사용하여 실제 호출된 인자를 검증한다.
+                    // MockK's eq() matcher has compatibility issues with @JvmInline value classes,
+                    // so we use slot capture to verify the actual arguments.
                     val sourceFilesSlot = slot<Map<String, String>>()
 
                     coEvery {
                         scmProviderPort.getFileContent(any(), any(), any())
                     } answers {
-                        // MockK이 @JvmInline value class를 언박싱할 수 있으므로
-                        // Any 타입으로 받아서 String으로 변환한다.
+                        // MockK may unbox @JvmInline value classes,
+                        // so we receive as Any type and convert to String.
                         val pathArg = args[1]
                         val pathValue = when (pathArg) {
                             is FileChange.FilePath -> pathArg.value
@@ -140,7 +140,7 @@ class AnalyzeErrorUseCaseTest : BehaviorSpec({
                             errorEvent = errorEvent,
                             repoId = TestFixtures.REPO_ID,
                             defaultBranch = TestFixtures.DEFAULT_BRANCH,
-                            sourceRoot = TestFixtures.SOURCE_ROOT,
+                            sourceRoots = TestFixtures.SOURCE_ROOTS,
                         )
                     )
 
@@ -171,7 +171,7 @@ class AnalyzeErrorUseCaseTest : BehaviorSpec({
                             errorEvent = errorEvent,
                             repoId = TestFixtures.REPO_ID,
                             defaultBranch = TestFixtures.DEFAULT_BRANCH,
-                            sourceRoot = TestFixtures.SOURCE_ROOT,
+                            sourceRoots = TestFixtures.SOURCE_ROOTS,
                         )
                     )
 

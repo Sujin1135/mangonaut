@@ -4,7 +4,7 @@ import io.autofixer.mangonaut.domain.model.Confidence
 import org.springframework.boot.context.properties.ConfigurationProperties
 
 /**
- * Mangonaut 애플리케이션 설정 프로퍼티
+ * Mangonaut application configuration properties.
  */
 @ConfigurationProperties(prefix = "mangonaut")
 data class MangonautProperties(
@@ -16,7 +16,7 @@ data class MangonautProperties(
 )
 
 /**
- * Sentry 연동 설정
+ * Sentry integration configuration.
  */
 data class SentryProperties(
     val baseUrl: String = "https://sentry.io",
@@ -26,7 +26,7 @@ data class SentryProperties(
 )
 
 /**
- * GitHub 연동 설정
+ * GitHub integration configuration.
  */
 data class GitHubProperties(
     val baseUrl: String = "https://api.github.com",
@@ -34,7 +34,7 @@ data class GitHubProperties(
 )
 
 /**
- * LLM 연동 설정
+ * LLM integration configuration.
  */
 data class LlmProperties(
     val provider: String = "claude",
@@ -44,17 +44,17 @@ data class LlmProperties(
 )
 
 /**
- * Sentry 프로젝트와 SCM 저장소 간의 매핑
+ * Mapping between Sentry projects and SCM repositories.
  */
 data class ProjectMappingProperties(
     val sourceProject: String,
     val scmRepo: String,
-    val sourceRoot: String = "src/main/kotlin/",
+    val sourceRoots: List<String> = listOf("src/main/kotlin/"),
     val defaultBranch: String = "main",
 )
 
 /**
- * 동작 방식 설정
+ * Behavior configuration.
  */
 data class BehaviorProperties(
     val autoPr: Boolean = true,

@@ -1,28 +1,28 @@
 package io.autofixer.mangonaut.presentation.service
 
 /**
- * 프로젝트 매핑 서비스 인터페이스
+ * Project mapping service interface.
  *
- * Sentry 프로젝트와 SCM 저장소 간의 매핑을 관리합니다.
- * Infrastructure 레이어에서 구현 제공
+ * Manages mappings between Sentry projects and SCM repositories.
+ * Implementation provided by the Infrastructure layer.
  */
 interface ProjectMappingService {
     /**
-     * 소스 프로젝트에 해당하는 매핑 정보를 조회합니다.
+     * Looks up mapping information for the given source project.
      *
-     * @param sourceProject Sentry 프로젝트 slug
-     * @return 매핑 정보, 없으면 null
+     * @param sourceProject Sentry project slug
+     * @return mapping information, or null if not found
      */
     fun findMapping(sourceProject: String): ProjectMapping?
 }
 
 /**
- * 프로젝트 매핑 정보
+ * Project mapping information.
  */
 data class ProjectMapping(
     val sourceProject: String,
     val scmRepo: String,
-    val sourceRoot: String,
+    val sourceRoots: List<String>,
     val defaultBranch: String,
     val branchPrefix: String,
     val labels: List<String>,

@@ -1,17 +1,17 @@
 package io.autofixer.mangonaut.presentation.service
 
 /**
- * Webhook 서명 검증 서비스 인터페이스
+ * Webhook signature verification service interface.
  *
- * Infrastructure 레이어에서 구현 제공
+ * Implementation provided by the Infrastructure layer.
  */
 interface WebhookVerificationService {
     /**
-     * Sentry Webhook 서명을 검증합니다.
+     * Verifies the Sentry Webhook signature.
      *
-     * @param payload 원본 요청 본문
-     * @param signature Sentry-Hook-Signature 헤더 값
-     * @return 검증 성공 여부
+     * @param payload original request body
+     * @param signature Sentry-Hook-Signature header value
+     * @return whether verification succeeded
      */
     fun verifySentrySignature(payload: String, signature: String): Boolean
 }

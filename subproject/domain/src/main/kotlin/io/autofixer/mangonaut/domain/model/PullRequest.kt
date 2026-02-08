@@ -1,7 +1,7 @@
 package io.autofixer.mangonaut.domain.model
 
 /**
- * Pull Request 생성 파라미터
+ * Pull Request creation parameters.
  */
 data class PrParams(
     val title: Title,
@@ -27,7 +27,7 @@ data class PrParams(
 }
 
 /**
- * Pull Request 생성 결과
+ * Pull Request creation result.
  */
 data class PrResult(
     val number: Number,
@@ -49,7 +49,7 @@ data class PrResult(
 }
 
 /**
- * Repository 식별자
+ * Repository identifier.
  */
 @JvmInline
 value class RepoId(val value: String) {
@@ -58,8 +58,8 @@ value class RepoId(val value: String) {
 
     companion object {
         /**
-         * 검증을 포함한 팩토리 메서드
-         * @throws IllegalArgumentException 'owner/repo' 형식이 아닌 경우
+         * Factory method with validation.
+         * @throws IllegalArgumentException if not in 'owner/repo' format
          */
         fun of(value: String): RepoId {
             require(value.contains("/")) { "RepoId must be in 'owner/repo' format: $value" }

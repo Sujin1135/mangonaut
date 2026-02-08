@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 
 /**
- * Health Check 컨트롤러
+ * Health Check controller.
  */
 @RestController
 @RequestMapping("/health")

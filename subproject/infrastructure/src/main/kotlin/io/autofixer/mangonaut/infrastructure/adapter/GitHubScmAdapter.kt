@@ -1,5 +1,7 @@
 package io.autofixer.mangonaut.infrastructure.adapter
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties
+import com.fasterxml.jackson.annotation.JsonProperty
 import io.autofixer.mangonaut.domain.exception.GitHubApiException
 import io.autofixer.mangonaut.domain.model.FileChange
 import io.autofixer.mangonaut.domain.model.PrParams
@@ -14,7 +16,7 @@ import org.springframework.web.reactive.function.client.WebClientResponseExcepti
 import java.util.Base64
 
 /**
- * GitHub API를 사용한 ScmProviderPort 구현체
+ * ScmProviderPort implementation using the GitHub API.
  */
 @Component
 class GitHubScmAdapter(
@@ -43,7 +45,7 @@ class GitHubScmAdapter(
 
     override suspend fun createBranch(repoId: RepoId, baseBranch: PrParams.BaseBranch, newBranch: PrParams.HeadBranch) {
         try {
-            // base 브랜치의 최신 커밋 SHA 조회
+            // Fetch the latest commit SHA of the base branch
             val refResponse = githubWebClient
                 .get()
                 .uri("/repos/${repoId.value}/git/refs/heads/${baseBranch.value}")
@@ -51,7 +53,7 @@ class GitHubScmAdapter(
                 .bodyToMono(GitHubRefResponse::class.java)
                 .awaitSingle()
 
-            // 새 브랜치 생성
+            // Create new branch
             githubWebClient
                 .post()
                 .uri("/repos/${repoId.value}/git/refs")
@@ -80,7 +82,7 @@ class GitHubScmAdapter(
     ) {
         try {
             for (change in changes) {
-                // 기존 파일의 SHA 조회 (업데이트를 위해 필요)
+                // Fetch existing file SHA (required for update)
                 val existingFile = try {
                     githubWebClient
                         .get()
@@ -92,7 +94,7 @@ class GitHubScmAdapter(
                     null
                 }
 
-                // 파일 업데이트/생성
+                // Update/create file
                 val requestBody = mutableMapOf(
                     "message" to message,
                     "content" to Base64.getEncoder().encodeToString(change.modified.value.toByteArray()),
@@ -133,7 +135,7 @@ class GitHubScmAdapter(
                 .bodyToMono(GitHubPrResponse::class.java)
                 .awaitSingle()
 
-            // 라벨 추가
+            // Add labels
             if (params.labels.isNotEmpty()) {
                 githubWebClient
                     .post()
@@ -191,6 +193,7 @@ class GitHubScmAdapter(
 }
 
 // GitHub API Response DTOs
+@JsonIgnoreProperties(ignoreUnknown = true)
 data class GitHubContentResponse(
     val name: String,
     val path: String,
@@ -199,19 +202,23 @@ data class GitHubContentResponse(
     val encoding: String,
 )
 
+@JsonIgnoreProperties(ignoreUnknown = true)
 data class GitHubRefResponse(
     val ref: String,
     val `object`: GitHubRefObject,
 )
 
+@JsonIgnoreProperties(ignoreUnknown = true)
 data class GitHubRefObject(
     val sha: String,
     val type: String,
 )
 
+@JsonIgnoreProperties(ignoreUnknown = true)
 data class GitHubPrResponse(
     val number: Int,
     val url: String,
+    @JsonProperty("html_url")
     val htmlUrl: String,
     val state: String,
 )

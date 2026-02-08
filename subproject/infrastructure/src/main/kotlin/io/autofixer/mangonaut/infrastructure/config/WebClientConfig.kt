@@ -7,9 +7,9 @@ import org.springframework.http.MediaType
 import org.springframework.web.reactive.function.client.WebClient
 
 /**
- * WebClient 설정
+ * WebClient configuration.
  *
- * 각 외부 서비스별 WebClient 빈을 제공합니다.
+ * Provides WebClient beans for each external service.
  */
 @Configuration
 class WebClientConfig(

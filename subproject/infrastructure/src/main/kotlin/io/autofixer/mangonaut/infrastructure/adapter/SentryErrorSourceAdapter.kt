@@ -1,5 +1,6 @@
 package io.autofixer.mangonaut.infrastructure.adapter
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.annotation.JsonSubTypes
 import com.fasterxml.jackson.annotation.JsonTypeInfo
 import io.autofixer.mangonaut.domain.exception.SentryApiException
@@ -16,7 +17,7 @@ import org.springframework.web.reactive.function.client.WebClientResponseExcepti
 import java.time.Instant
 
 /**
- * Sentry API를 사용한 ErrorSourcePort 구현체
+ * ErrorSourcePort implementation using the Sentry API.
  */
 @Component
 class SentryErrorSourceAdapter(
@@ -30,7 +31,7 @@ class SentryErrorSourceAdapter(
         try {
             val response = sentryWebClient
                 .get()
-                .uri("/api/0/organizations/${properties.sentry.org}/issues/${issueId.value}/events/latest/")
+                .uri("/api/0/issues/${issueId.value}/events/latest/")
                 .retrieve()
                 .bodyToMono(SentryEventResponse::class.java)
                 .awaitSingle()
@@ -59,7 +60,7 @@ class SentryErrorSourceAdapter(
     }
 
     /**
-     * Sentry API 응답 -> 도메인 모델 변환
+     * Converts Sentry API response to domain model.
      */
     private fun SentryEventResponse.toDomain(issueId: ErrorEvent.Id): ErrorEvent {
         val exception = this.entries
@@ -91,8 +92,9 @@ class SentryErrorSourceAdapter(
     }
 
     private fun SentryStackFrame.toDomain(): StackFrame {
+        val resolvedFilename = resolveFilename(this.filename, this.module)
         return StackFrame(
-            filename = StackFrame.Filename(this.filename ?: "unknown"),
+            filename = StackFrame.Filename(resolvedFilename),
             function = StackFrame.FunctionName(this.function ?: "unknown"),
             lineNo = StackFrame.LineNumber(this.lineNo ?: 0),
             colNo = this.colNo?.let { StackFrame.ColumnNumber(it) },
@@ -101,6 +103,22 @@ class SentryErrorSourceAdapter(
             postContext = this.postContext ?: emptyList(),
             inApp = StackFrame.InApp(this.inApp ?: false),
         )
+    }
+
+    /**
+     * Sentry JVM SDK sends filename as a short file name (e.g., "SentryTestRunner.kt")
+     * and module as FQCN (e.g., "io.contents.collector.SentryTestRunner").
+     * Extracts the package path from module and combines it with filename.
+     * Result: "io/contents/collector/SentryTestRunner.kt"
+     */
+    private fun resolveFilename(filename: String?, module: String?): String {
+        if (filename == null) return "unknown"
+        if (module == null || filename.contains("/")) return filename
+
+        val packagePath = module
+            .substringBeforeLast(".")
+            .replace('.', '/')
+        return "$packagePath/$filename"
     }
 
     private fun SentryBreadcrumb.toDomain(): Breadcrumb {
@@ -145,7 +163,6 @@ data class SentryTag(
 
 @JsonTypeInfo(
     use = JsonTypeInfo.Id.NAME,
-    include = JsonTypeInfo.As.EXISTING_PROPERTY,
     property = "type",
     defaultImpl = SentryUnknownEntry::class,
 )
@@ -153,21 +170,21 @@ data class SentryTag(
     JsonSubTypes.Type(value = SentryExceptionEntry::class, name = "exception"),
     JsonSubTypes.Type(value = SentryBreadcrumbEntry::class, name = "breadcrumbs"),
 )
+@JsonIgnoreProperties(ignoreUnknown = true)
 sealed interface SentryEntry
 
+@JsonIgnoreProperties(ignoreUnknown = true)
 data class SentryExceptionEntry(
-    val type: String,
     val data: SentryExceptionData,
 ) : SentryEntry
 
+@JsonIgnoreProperties(ignoreUnknown = true)
 data class SentryBreadcrumbEntry(
-    val type: String,
     val data: SentryBreadcrumbData,
 ) : SentryEntry
 
-data class SentryUnknownEntry(
-    val type: String? = null,
-) : SentryEntry
+@JsonIgnoreProperties(ignoreUnknown = true)
+class SentryUnknownEntry : SentryEntry
 
 data class SentryExceptionData(
     val values: List<SentryException>?,
@@ -183,8 +200,10 @@ data class SentryStacktrace(
     val frames: List<SentryStackFrame>?,
 )
 
+@JsonIgnoreProperties(ignoreUnknown = true)
 data class SentryStackFrame(
     val filename: String?,
+    val module: String?,
     val function: String?,
     val lineNo: Int?,
     val colNo: Int?,

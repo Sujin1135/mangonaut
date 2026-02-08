@@ -1,7 +1,7 @@
 package io.autofixer.mangonaut.presentation.dto
 
 /**
- * Webhook 처리 응답 DTO
+ * Webhook processing response DTO.
  */
 data class WebhookResponse(
     val status: String,
@@ -16,7 +16,7 @@ data class WebhookResponseData(
 )
 
 /**
- * 에러 응답 DTO
+ * Error response DTO.
  */
 data class ErrorResponse(
     val errorCode: String,

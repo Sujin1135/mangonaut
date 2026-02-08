@@ -6,69 +6,69 @@ import io.autofixer.mangonaut.domain.model.PrResult
 import io.autofixer.mangonaut.domain.model.RepoId
 
 /**
- * SCM(Source Control Management) 프로바이더와의 통신을 위한 포트
+ * Port for communicating with SCM (Source Control Management) providers.
  *
- * GitHub, GitLab, Bitbucket 등의 구현체를 Infrastructure 레이어에서 제공합니다.
+ * Implementations for GitHub, GitLab, Bitbucket, etc. are provided by the Infrastructure layer.
  */
 interface ScmProviderPort {
     /**
-     * SCM 프로바이더의 식별자
-     * 예: "github", "gitlab", "bitbucket"
+     * Identifier for the SCM provider.
+     * e.g., "github", "gitlab", "bitbucket"
      */
     val name: String
 
     /**
-     * 파일 내용을 조회합니다.
+     * Retrieves file content.
      *
-     * @param repoId 저장소 식별자 (예: "owner/repo")
-     * @param path 파일 경로
-     * @param ref 브랜치 또는 커밋 SHA
-     * @return 파일 내용
+     * @param repoId repository identifier (e.g., "owner/repo")
+     * @param path file path
+     * @param ref branch or commit SHA
+     * @return file content
      */
     suspend fun getFileContent(repoId: RepoId, path: FileChange.FilePath, ref: String): String
 
     /**
-     * 새 브랜치를 생성합니다.
+     * Creates a new branch.
      *
-     * @param repoId 저장소 식별자
-     * @param baseBranch 기준 브랜치
-     * @param newBranch 새 브랜치 이름
+     * @param repoId repository identifier
+     * @param baseBranch base branch
+     * @param newBranch new branch name
      */
     suspend fun createBranch(repoId: RepoId, baseBranch: PrParams.BaseBranch, newBranch: PrParams.HeadBranch)
 
     /**
-     * 파일 변경사항을 커밋합니다.
+     * Commits file changes.
      *
-     * @param repoId 저장소 식별자
-     * @param branch 대상 브랜치
-     * @param changes 변경할 파일 목록
-     * @param message 커밋 메시지
+     * @param repoId repository identifier
+     * @param branch target branch
+     * @param changes list of files to change
+     * @param message commit message
      */
     suspend fun commitFiles(repoId: RepoId, branch: PrParams.HeadBranch, changes: List<FileChange>, message: String)
 
     /**
-     * Pull Request를 생성합니다.
+     * Creates a Pull Request.
      *
-     * @param repoId 저장소 식별자
-     * @param params PR 생성 파라미터
-     * @return PR 생성 결과
+     * @param repoId repository identifier
+     * @param params PR creation parameters
+     * @return PR creation result
      */
     suspend fun createPullRequest(repoId: RepoId, params: PrParams): PrResult
 
     /**
-     * 특정 브랜치에 열린 PR이 있는지 확인합니다.
-     * 중복 PR 생성 방지에 사용됩니다.
+     * Checks if there is an open PR on a specific branch.
+     * Used to prevent duplicate PR creation.
      *
-     * @param repoId 저장소 식별자
-     * @param branchName 확인할 브랜치 이름
-     * @return 열린 PR 존재 여부
+     * @param repoId repository identifier
+     * @param branchName branch name to check
+     * @return whether an open PR exists
      */
     suspend fun hasOpenPR(repoId: RepoId, branchName: PrParams.HeadBranch): Boolean
 
     /**
-     * SCM 프로바이더의 연결 상태를 확인합니다.
+     * Checks the connectivity status of the SCM provider.
      *
-     * @return 연결 성공 여부
+     * @return true if connection is successful
      */
     suspend fun healthCheck(): Boolean
 }

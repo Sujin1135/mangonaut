@@ -6,9 +6,9 @@ import io.autofixer.mangonaut.presentation.service.ProjectMappingService
 import org.springframework.stereotype.Service
 
 /**
- * 프로젝트 매핑 서비스 구현체
+ * Project mapping service implementation.
  *
- * application.yml의 설정에서 매핑 정보를 조회합니다.
+ * Retrieves mapping information from application.yml configuration.
  */
 @Service
 class ProjectMappingServiceImpl(
@@ -22,7 +22,7 @@ class ProjectMappingServiceImpl(
         return ProjectMapping(
             sourceProject = projectConfig.sourceProject,
             scmRepo = projectConfig.scmRepo,
-            sourceRoot = projectConfig.sourceRoot,
+            sourceRoots = projectConfig.sourceRoots,
             defaultBranch = projectConfig.defaultBranch,
             branchPrefix = properties.behavior.branchPrefix,
             labels = properties.behavior.labels,

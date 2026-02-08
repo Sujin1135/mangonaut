@@ -37,7 +37,7 @@ class SentryWebhookController(
         @RequestHeader("Sentry-Hook-Resource") resource: String,
         @RequestBody rawBody: String,
     ): ResponseEntity<WebhookResponse> {
-        // 서명 검증
+        // Verify signature
         if (!webhookVerificationService.verifySentrySignature(rawBody, signature)) {
             throw WebhookValidationException("Invalid webhook signature")
         }
@@ -45,7 +45,7 @@ class SentryWebhookController(
         val request = objectMapper.readValue(rawBody, SentryWebhookRequest::class.java)
         logger.info("Received Sentry webhook: action={}, resource={}", request.action, resource)
 
-        // 지원하는 이벤트 타입인지 확인
+        // Check if the event type is supported
         if (request.action != "created" && request.action != "triggered") {
             logger.info("Ignoring webhook action: {}", request.action)
             return ResponseEntity.ok(
@@ -56,7 +56,7 @@ class SentryWebhookController(
             )
         }
 
-        // 프로젝트 매핑 조회
+        // Look up project mapping
         val projectSlug = request.data.issue.project.slug
         val mapping = projectMappingService.findMapping(projectSlug)
             ?: return ResponseEntity.ok(
@@ -66,7 +66,7 @@ class SentryWebhookController(
                 )
             )
 
-        // 비동기 처리 시작
+        // Start async processing
         val issueId = request.data.issue.id
         webhookProcessingScope.launch {
             try {
@@ -76,7 +76,7 @@ class SentryWebhookController(
                         sourceProject = ErrorEvent.SourceProject(projectSlug),
                         repoId = RepoId.of(mapping.scmRepo),
                         defaultBranch = mapping.defaultBranch,
-                        sourceRoot = mapping.sourceRoot,
+                        sourceRoots = mapping.sourceRoots,
                         branchPrefix = mapping.branchPrefix,
                         labels = mapping.labels,
                         minConfidence = Confidence.valueOf(mapping.minConfidence),
@@ -89,7 +89,7 @@ class SentryWebhookController(
             }
         }
 
-        // 즉시 200 OK 반환
+        // Return 200 OK immediately
         return ResponseEntity.ok(
             WebhookResponse(
                 status = "accepted",

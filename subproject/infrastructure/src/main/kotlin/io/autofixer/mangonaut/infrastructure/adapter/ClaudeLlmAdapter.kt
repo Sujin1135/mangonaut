@@ -14,7 +14,7 @@ import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.WebClientResponseException
 
 /**
- * Claude API를 사용한 LlmProviderPort 구현체
+ * LlmProviderPort implementation using the Claude API.
  */
 @Component
 class ClaudeLlmAdapter(
@@ -59,7 +59,7 @@ class ClaudeLlmAdapter(
 
     override suspend fun healthCheck(): Boolean {
         return try {
-            // Claude API는 헬스체크 엔드포인트가 없어서 간단한 요청으로 확인
+            // Claude API has no health check endpoint, so verify with a simple request
             claudeWebClient
                 .post()
                 .uri("/v1/messages")
@@ -140,7 +140,7 @@ class ClaudeLlmAdapter(
         val content = response.content.firstOrNull()?.text
             ?: throw LlmApiException("Empty response from Claude")
 
-        // JSON 블록 추출
+        // Extract JSON block
         val jsonMatch = Regex("```json\\s*(.+?)\\s*```", RegexOption.DOT_MATCHES_ALL)
             .find(content)
             ?.groupValues
