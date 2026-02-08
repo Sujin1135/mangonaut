@@ -37,33 +37,38 @@ allprojects {
     }
 }
 
+val kotestVersion = "6.0.0.M2"
+val mockkVersion = "1.14.2"
+
+// 전체 서브모듈 공통: Kotlin + 테스트
 subprojects {
     apply(plugin = "org.jetbrains.kotlin.jvm")
+
+    dependencies {
+        implementation("org.jetbrains.kotlin:kotlin-reflect")
+
+        testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
+        testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+        testImplementation("io.kotest:kotest-runner-junit5:$kotestVersion")
+        testImplementation("io.kotest:kotest-assertions-core:$kotestVersion")
+        testImplementation("io.mockk:mockk:$mockkVersion")
+    }
+}
+
+// Spring 모듈 (domain 제외): Spring Boot + WebFlux + Coroutines
+configure(subprojects.filter { it.name != "domain" }) {
     apply(plugin = "org.jetbrains.kotlin.plugin.spring")
     apply(plugin = "org.springframework.boot")
     apply(plugin = "io.spring.dependency-management")
 
-    val kotestVersion = "6.0.0.M2"
-    val mockkVersion = "1.14.2"
-
     dependencies {
         implementation("org.springframework.boot:spring-boot-starter-webflux")
         implementation("io.projectreactor.kotlin:reactor-kotlin-extensions")
-        implementation("org.jetbrains.kotlin:kotlin-reflect")
         implementation("org.jetbrains.kotlinx:kotlinx-coroutines-reactor")
         implementation("tools.jackson.module:jackson-module-kotlin")
 
         testImplementation("org.springframework.boot:spring-boot-starter-webflux-test")
-        testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
         testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test")
-        testRuntimeOnly("org.junit.platform:junit-platform-launcher")
-
-        // Kotest
-        testImplementation("io.kotest:kotest-runner-junit5:$kotestVersion")
-        testImplementation("io.kotest:kotest-assertions-core:$kotestVersion")
-
-        // MockK
-        testImplementation("io.mockk:mockk:$mockkVersion")
     }
 
     // boot 모듈만 bootJar 활성화
