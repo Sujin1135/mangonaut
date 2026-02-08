@@ -1,6 +1,7 @@
 package io.autofixer.mangonaut.presentation.controller
 
 import io.autofixer.mangonaut.application.usecase.ProcessErrorAlertUseCase
+import io.autofixer.mangonaut.domain.exception.WebhookValidationException
 import io.autofixer.mangonaut.domain.model.Confidence
 import io.autofixer.mangonaut.domain.model.ErrorEvent
 import io.autofixer.mangonaut.domain.model.RepoId
@@ -40,13 +41,7 @@ class SentryWebhookController(
 
         // 서명 검증
         if (!webhookVerificationService.verifySentrySignature(rawBody, signature)) {
-            logger.warn("Invalid webhook signature")
-            return ResponseEntity.status(401).body(
-                WebhookResponse(
-                    status = "error",
-                    message = "Invalid signature",
-                )
-            )
+            throw WebhookValidationException("Invalid webhook signature")
         }
 
         // 지원하는 이벤트 타입인지 확인
