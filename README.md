@@ -1,5 +1,5 @@
 # Mangonaut
-
+![mangonaut_character.jpeg](public/images/mangonaut_character.jpeg)
 <p align="center">An open-source service that analyzes Sentry error alerts with AI and automatically creates fix Pull Requests</p>
 
 ![latest release](https://badgen.net/badge/latest%20release/v0.0.1-SNAPSHOT/blue?icon=github&color=green) ![Kotlin](https://badgen.net/badge/Kotlin/2.3.10/blue?color=purple) ![Spring Boot](https://badgen.net/badge/Spring%20Boot/4.0.2/blue?color=6DB33F) ![Java](https://badgen.net/badge/Java/25/blue?color=orange) ![License](https://badgen.net/badge/License/MIT/blue?color=yellow)
