@@ -16,12 +16,18 @@ class AnalyzeErrorUseCaseTest : BehaviorSpec({
     context("AnalyzeErrorUseCase") {
         given("an error event with application stack frames") {
             `when`("the use case is invoked") {
-                then("should return the LLM analysis result and fetch source files for app frames only") {
+                then("should resolve file paths, fetch source files, and return LLM analysis result") {
                     val scmProviderPort = mockk<ScmProviderPort>()
                     val llmProviderPort = mockk<LlmProviderPort>()
                     val useCase = AnalyzeErrorUseCase(scmProviderPort, llmProviderPort)
                     val errorEvent = TestFixtures.createErrorEvent()
                     val fixResult = TestFixtures.createFixResult()
+
+                    coEvery {
+                        scmProviderPort.resolveFilePaths(any<RepoId>(), any<List<String>>(), any<String>())
+                    } returns mapOf(
+                        "com/example/UserService.kt" to FileChange.FilePath("src/main/kotlin/com/example/UserService.kt"),
+                    )
 
                     coEvery {
                         scmProviderPort.getFileContent(any<RepoId>(), any<FileChange.FilePath>(), any<String>())
@@ -36,11 +42,18 @@ class AnalyzeErrorUseCaseTest : BehaviorSpec({
                             errorEvent = errorEvent,
                             repoId = TestFixtures.REPO_ID,
                             defaultBranch = TestFixtures.DEFAULT_BRANCH,
-                            sourceRoots = TestFixtures.SOURCE_ROOTS,
                         )
                     )
 
                     result shouldBe fixResult
+
+                    coVerify(exactly = 1) {
+                        scmProviderPort.resolveFilePaths(
+                            TestFixtures.REPO_ID,
+                            listOf("com/example/UserService.kt"),
+                            TestFixtures.DEFAULT_BRANCH,
+                        )
+                    }
 
                     coVerify(exactly = 1) {
                         scmProviderPort.getFileContent(
@@ -73,6 +86,10 @@ class AnalyzeErrorUseCaseTest : BehaviorSpec({
                     )
                     val fixResult = TestFixtures.createFixResult()
 
+                    coEvery {
+                        scmProviderPort.resolveFilePaths(any(), any(), any())
+                    } returns emptyMap()
+
                     coEvery { llmProviderPort.analyzeError(any(), any()) } returns fixResult
 
                     useCase(
@@ -80,7 +97,6 @@ class AnalyzeErrorUseCaseTest : BehaviorSpec({
                             errorEvent = errorEvent,
                             repoId = TestFixtures.REPO_ID,
                             defaultBranch = TestFixtures.DEFAULT_BRANCH,
-                            sourceRoots = TestFixtures.SOURCE_ROOTS,
                         )
                     )
 
@@ -109,15 +125,18 @@ class AnalyzeErrorUseCaseTest : BehaviorSpec({
                     )
                     val fixResult = TestFixtures.createFixResult()
 
-                    // MockK's eq() matcher has compatibility issues with @JvmInline value classes,
-                    // so we use slot capture to verify the actual arguments.
                     val sourceFilesSlot = slot<Map<String, String>>()
+
+                    coEvery {
+                        scmProviderPort.resolveFilePaths(any(), any(), any())
+                    } returns mapOf(
+                        "Good.kt" to FileChange.FilePath("src/main/kotlin/Good.kt"),
+                        "Missing.kt" to FileChange.FilePath("src/main/kotlin/Missing.kt"),
+                    )
 
                     coEvery {
                         scmProviderPort.getFileContent(any(), any(), any())
                     } answers {
-                        // MockK may unbox @JvmInline value classes,
-                        // so we receive as Any type and convert to String.
                         val pathArg = args[1]
                         val pathValue = when (pathArg) {
                             is FileChange.FilePath -> pathArg.value
@@ -140,7 +159,6 @@ class AnalyzeErrorUseCaseTest : BehaviorSpec({
                             errorEvent = errorEvent,
                             repoId = TestFixtures.REPO_ID,
                             defaultBranch = TestFixtures.DEFAULT_BRANCH,
-                            sourceRoots = TestFixtures.SOURCE_ROOTS,
                         )
                     )
 
@@ -163,6 +181,12 @@ class AnalyzeErrorUseCaseTest : BehaviorSpec({
                     )
                     val fixResult = TestFixtures.createFixResult()
 
+                    coEvery {
+                        scmProviderPort.resolveFilePaths(any(), any(), any())
+                    } returns mapOf(
+                        "UserService.kt" to FileChange.FilePath("src/main/kotlin/UserService.kt"),
+                    )
+
                     coEvery { scmProviderPort.getFileContent(any(), any(), any()) } returns "content"
                     coEvery { llmProviderPort.analyzeError(any(), any()) } returns fixResult
 
@@ -171,7 +195,6 @@ class AnalyzeErrorUseCaseTest : BehaviorSpec({
                             errorEvent = errorEvent,
                             repoId = TestFixtures.REPO_ID,
                             defaultBranch = TestFixtures.DEFAULT_BRANCH,
-                            sourceRoots = TestFixtures.SOURCE_ROOTS,
                         )
                     )
 

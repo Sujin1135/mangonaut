@@ -26,7 +26,6 @@ class ProcessErrorAlertUseCaseTest : BehaviorSpec({
             sourceProject = ErrorEvent.SourceProject("my-backend"),
             repoId = TestFixtures.REPO_ID,
             defaultBranch = TestFixtures.DEFAULT_BRANCH,
-            sourceRoots = TestFixtures.SOURCE_ROOTS,
             branchPrefix = TestFixtures.BRANCH_PREFIX,
             labels = TestFixtures.LABELS,
             minConfidence = minConfidence,

@@ -23,7 +23,6 @@ class AnalyzeErrorUseCase(
         val errorEvent: ErrorEvent,
         val repoId: io.autofixer.mangonaut.domain.model.RepoId,
         val defaultBranch: String,
-        val sourceRoots: List<String>,
     )
 
     /**
@@ -41,7 +40,6 @@ class AnalyzeErrorUseCase(
             repoId = repoId,
             frames = appFrames,
             ref = params.defaultBranch,
-            sourceRoots = params.sourceRoots,
         )
 
         // Analyze via LLM
@@ -53,28 +51,27 @@ class AnalyzeErrorUseCase(
 
     /**
      * Fetches source files referenced in the stack frames.
+     *
+     * Uses the SCM provider's tree API to dynamically resolve
+     * stacktrace filenames to actual repository paths.
      */
     private suspend fun fetchSourceFiles(
         repoId: io.autofixer.mangonaut.domain.model.RepoId,
         frames: List<StackFrame>,
         ref: String,
-        sourceRoots: List<String>,
     ): Map<String, String> {
         val uniqueFiles = frames
             .map { it.filename.value }
             .distinct()
             .take(MAX_FILES_TO_FETCH)
 
-        return uniqueFiles.mapNotNull { filename ->
-            sourceRoots.firstNotNullOfOrNull { sourceRoot ->
-                runCatching {
-                    val filePath = io.autofixer.mangonaut.domain.model.FileChange.FilePath(
-                        "$sourceRoot$filename"
-                    )
-                    val content = scmProviderPort.getFileContent(repoId, filePath, ref)
-                    filename to content
-                }.getOrNull()
-            }
+        val pathMap = scmProviderPort.resolveFilePaths(repoId, uniqueFiles, ref)
+
+        return pathMap.mapNotNull { (filename, repoPath) ->
+            runCatching {
+                val content = scmProviderPort.getFileContent(repoId, repoPath, ref)
+                filename to content
+            }.getOrNull()
         }.toMap()
     }
 

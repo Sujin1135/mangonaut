@@ -28,7 +28,6 @@ class ProcessErrorAlertUseCase(
         val sourceProject: ErrorEvent.SourceProject,
         val repoId: RepoId,
         val defaultBranch: String,
-        val sourceRoots: List<String>,
         val branchPrefix: String,
         val labels: List<String>,
         val minConfidence: Confidence,
@@ -57,7 +56,6 @@ class ProcessErrorAlertUseCase(
                 errorEvent = errorEvent,
                 repoId = params.repoId,
                 defaultBranch = params.defaultBranch,
-                sourceRoots = params.sourceRoots,
             )
         )
         logger.info(

@@ -76,7 +76,6 @@ class SentryWebhookController(
                         sourceProject = ErrorEvent.SourceProject(projectSlug),
                         repoId = RepoId.of(mapping.scmRepo),
                         defaultBranch = mapping.defaultBranch,
-                        sourceRoots = mapping.sourceRoots,
                         branchPrefix = mapping.branchPrefix,
                         labels = mapping.labels,
                         minConfidence = Confidence.valueOf(mapping.minConfidence),

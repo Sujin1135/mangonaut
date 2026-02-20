@@ -162,6 +162,32 @@ class GitHubScmAdapter(
         }
     }
 
+    override suspend fun resolveFilePaths(
+        repoId: RepoId,
+        filenames: List<String>,
+        ref: String,
+    ): Map<String, FileChange.FilePath> {
+        try {
+            val tree = githubWebClient
+                .get()
+                .uri("/repos/${repoId.value}/git/trees/$ref?recursive=1")
+                .retrieve()
+                .bodyToMono(GitHubTreeResponse::class.java)
+                .awaitSingle()
+
+            return filenames.mapNotNull { filename ->
+                tree.tree
+                    .find { it.type == "blob" && it.path.endsWith(filename) }
+                    ?.let { filename to FileChange.FilePath(it.path) }
+            }.toMap()
+        } catch (e: WebClientResponseException) {
+            throw GitHubApiException(
+                message = "Failed to resolve file paths - ${e.statusCode}",
+                cause = e,
+            )
+        }
+    }
+
     override suspend fun hasOpenPR(repoId: RepoId, branchName: PrParams.HeadBranch): Boolean {
         return try {
             val response = githubWebClient
@@ -211,6 +237,18 @@ data class GitHubRefResponse(
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class GitHubRefObject(
     val sha: String,
+    val type: String,
+)
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+data class GitHubTreeResponse(
+    val sha: String,
+    val tree: List<GitHubTreeEntry>,
+)
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+data class GitHubTreeEntry(
+    val path: String,
     val type: String,
 )
 

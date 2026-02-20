@@ -66,6 +66,23 @@ interface ScmProviderPort {
     suspend fun hasOpenPR(repoId: RepoId, branchName: PrParams.HeadBranch): Boolean
 
     /**
+     * Resolves stacktrace filenames to actual repository file paths.
+     *
+     * Searches the repository tree for files whose path ends with the given filename.
+     * Language-agnostic: works for any project structure.
+     *
+     * @param repoId repository identifier
+     * @param filenames filenames from stacktrace (e.g., "com/example/UserService.kt")
+     * @param ref branch or commit SHA
+     * @return map of stacktrace filename → actual repository file path
+     */
+    suspend fun resolveFilePaths(
+        repoId: RepoId,
+        filenames: List<String>,
+        ref: String,
+    ): Map<String, FileChange.FilePath>
+
+    /**
      * Checks the connectivity status of the SCM provider.
      *
      * @return true if connection is successful

@@ -22,7 +22,6 @@ interface ProjectMappingService {
 data class ProjectMapping(
     val sourceProject: String,
     val scmRepo: String,
-    val sourceRoots: List<String>,
     val defaultBranch: String,
     val branchPrefix: String,
     val labels: List<String>,

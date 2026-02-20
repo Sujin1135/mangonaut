@@ -11,10 +11,12 @@ mangonaut:
     token: ${MANGONAUT_SENTRY_TOKEN:}
     webhook-secret: ${MANGONAUT_WEBHOOK_SECRET:}
 
-  # SCM Provider Configuration (GitHub)
+  # SCM Provider Configuration (GitHub App)
   github:
     base-url: https://api.github.com
-    token: ${MANGONAUT_GITHUB_TOKEN:}
+    app-id: ${MANGONAUT_GITHUB_APP_ID:}
+    installation-id: ${MANGONAUT_GITHUB_INSTALLATION_ID:}
+    private-key: ${MANGONAUT_GITHUB_PRIVATE_KEY:}
 
   # LLM Provider Configuration (Claude)
   llm:

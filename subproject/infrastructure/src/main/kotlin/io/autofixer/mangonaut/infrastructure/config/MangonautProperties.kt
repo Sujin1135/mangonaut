@@ -30,7 +30,9 @@ data class SentryProperties(
  */
 data class GitHubProperties(
     val baseUrl: String = "https://api.github.com",
-    val token: String = "",
+    val appId: String = "",
+    val installationId: String = "",
+    val privateKey: String = "",
 )
 
 /**
@@ -49,7 +51,6 @@ data class LlmProperties(
 data class ProjectMappingProperties(
     val sourceProject: String,
     val scmRepo: String,
-    val sourceRoots: List<String> = listOf("src/main/kotlin/"),
     val defaultBranch: String = "main",
 )
 

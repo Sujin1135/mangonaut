@@ -16,7 +16,6 @@ object TestFixtures {
 
     val REPO_ID = RepoId.of("testorg/test-repo")
     const val DEFAULT_BRANCH = "main"
-    val SOURCE_ROOTS = listOf("src/main/kotlin/")
     const val BRANCH_PREFIX = "fix/mangonaut-"
     val LABELS = listOf("auto-fix", "ai-generated")
 

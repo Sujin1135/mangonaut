@@ -18,8 +18,13 @@ sequenceDiagram
 
     Sentry->>Mangonaut: Webhook (issue.created)
     Note over Mangonaut: HMAC-SHA256 Signature Verification
+    Note over Mangonaut: Auto-match Sentry slug<br/>to GitHub App installed repo
     Mangonaut->>Sentry: GET /api/0/issues/{id}/events/latest/
     Sentry-->>Mangonaut: Error Event (stack trace, breadcrumbs)
+
+    Mangonaut->>GitHub: GET /repos/{owner}/{repo}/git/trees/{ref}?recursive=1
+    GitHub-->>Mangonaut: Repository File Tree
+    Note over Mangonaut: Resolve stacktrace filenames<br/>to actual repo paths
 
     Mangonaut->>GitHub: GET /repos/{owner}/{repo}/contents/{path}
     GitHub-->>Mangonaut: Source File Content
@@ -38,7 +43,8 @@ sequenceDiagram
 - **Sentry Webhook Integration** - Receives errors instantly via Webhook with HMAC-SHA256 signature verification for security
 - **AI-Powered Error Analysis** - Leverages Claude API to analyze root causes and generate code fix suggestions
 - **Automated PR Creation** - Creates fix branches and Pull Requests on GitHub based on analysis results
-- **Multi-Project Support** - Map multiple Sentry projects to different GitHub repositories
+- **Dynamic Project Mapping** - Automatically maps Sentry project slugs to GitHub repositories via GitHub App installation, with no manual configuration needed
+- **Language-Agnostic File Resolution** - Dynamically resolves stacktrace filenames to actual repository paths using the Git Tree API, supporting any language or project structure
 - **Confidence-Based Filtering** - Controls automatic PR creation based on LLM analysis confidence level (HIGH/MEDIUM/LOW)
 - **Async Processing** - Returns 200 OK immediately upon Webhook receipt, then processes analysis and PR creation asynchronously
 - **DDD Layered Architecture** - Clean separation of Domain, Application, Presentation, and Infrastructure layers
@@ -60,7 +66,7 @@ mangonaut/
 | **Domain** | Domain models, port definitions | `ErrorEvent`, `FixResult`, `ErrorSourcePort`, `ScmProviderPort`, `LlmProviderPort` |
 | **Application** | Use case orchestration | `ProcessErrorAlertUseCase`, `AnalyzeErrorUseCase`, `CreateFixPullRequestUseCase` |
 | **Presentation** | HTTP request/response handling | `SentryWebhookController`, `GlobalExceptionHandler`, `WebhookVerificationService` |
-| **Infrastructure** | External system integration | `SentryErrorSourceAdapter`, `GitHubScmAdapter`, `ClaudeLlmAdapter` |
+| **Infrastructure** | External system integration | `SentryErrorSourceAdapter`, `GitHubScmAdapter`, `ClaudeLlmAdapter`, `GitHubInstallationRepositoryClient` |
 
 ## Getting Started
 
@@ -69,13 +75,13 @@ mangonaut/
 - **Java 25+**
 - **Gradle 8.x+**
 - **Sentry** - A Sentry organization with an Internal Integration configured
-- **GitHub** - Fine-grained Personal Access Token
+- **GitHub App** - A GitHub App installed on the target repositories
 - **Anthropic API Key** - API key for Claude API access
 
 ### Installation
 
 ```bash
-git clone https://github.com/your-org/mangonaut.git
+git clone git@github.com:Sujin1135/mangonaut.git
 cd mangonaut
 ./gradlew build
 ```
@@ -97,7 +103,9 @@ The server runs at `http://localhost:8080` by default.
 | `MANGONAUT_SENTRY_ORG` | Yes | Sentry Organization Slug | `my-org` |
 | `MANGONAUT_SENTRY_TOKEN` | Yes | Sentry Internal Integration Token | `30936...` |
 | `MANGONAUT_WEBHOOK_SECRET` | Yes | Client Secret for Sentry Webhook signature verification | `abcdef123456...` |
-| `MANGONAUT_GITHUB_TOKEN` | Yes | GitHub Fine-grained Personal Access Token | `github_pat_...` |
+| `MANGONAUT_GITHUB_APP_ID` | Yes | GitHub App ID | `123456` |
+| `MANGONAUT_GITHUB_INSTALLATION_ID` | Yes | GitHub App Installation ID | `78901234` |
+| `MANGONAUT_GITHUB_PRIVATE_KEY` | Yes | GitHub App Private Key (Base64-encoded PEM) | `LS0tLS1CRUdJ...` |
 | `MANGONAUT_LLM_API_KEY` | Yes | Anthropic API Key | `sk-ant-...` |
 
 ### application.yml
@@ -111,10 +119,12 @@ mangonaut:
     token: ${MANGONAUT_SENTRY_TOKEN:}
     webhook-secret: ${MANGONAUT_WEBHOOK_SECRET:}
 
-  # GitHub Integration
+  # GitHub App Integration
   github:
     base-url: https://api.github.com
-    token: ${MANGONAUT_GITHUB_TOKEN:}
+    app-id: ${MANGONAUT_GITHUB_APP_ID:}
+    installation-id: ${MANGONAUT_GITHUB_INSTALLATION_ID:}
+    private-key: ${MANGONAUT_GITHUB_PRIVATE_KEY:}
 
   # LLM Configuration
   llm:
@@ -122,14 +132,6 @@ mangonaut:
     model: claude-sonnet-4-20250514
     api-key: ${MANGONAUT_LLM_API_KEY:}
     base-url: https://api.anthropic.com
-
-  # Project Mappings
-  projects:
-    - source-project: my-backend           # Sentry project slug
-      scm-repo: my-org/my-backend          # GitHub repository (owner/repo)
-      source-roots:                        # List of source code root paths
-        - src/main/kotlin/
-      default-branch: main                 # Base branch for PRs
 
   # Behavior Configuration
   behavior:
@@ -142,45 +144,17 @@ mangonaut:
     dry-run: false                         # If true, only analyzes without creating PRs
 ```
 
-### Project Mappings
+### Project Mapping
 
-The `mangonaut.projects` configuration maps Sentry projects to GitHub repositories.
+Mangonaut **automatically maps Sentry projects to GitHub repositories** by matching the Sentry project slug against the GitHub App's installed repository names. No manual `projects` configuration is needed.
 
-| Property | Description | Default |
-|----------|-------------|---------|
-| `source-project` | Sentry project slug (found in the Sentry dashboard URL) | - |
-| `scm-repo` | GitHub repository in `owner/repo` format | - |
-| `source-roots` | List of source code root paths in the repository | `["src/main/kotlin/"]` |
-| `default-branch` | Base branch for PRs | `main` |
+**How it works:**
+1. On startup, Mangonaut fetches the list of repositories where the GitHub App is installed
+2. This list is refreshed every 5 minutes
+3. When a Sentry webhook arrives, the project slug is matched against installed repo names
+4. Stacktrace filenames are resolved to actual file paths using the Git Tree API
 
-**Multi-module project example:**
-
-```yaml
-projects:
-  - source-project: my-backend
-    scm-repo: my-org/my-backend
-    source-roots:
-      - subproject/api/src/main/kotlin/
-      - subproject/core/src/main/kotlin/
-      - subproject/domain/src/main/kotlin/
-    default-branch: main
-```
-
-You can map multiple projects simultaneously:
-
-```yaml
-projects:
-  - source-project: backend-api
-    scm-repo: my-org/backend-api
-    source-roots:
-      - src/main/kotlin/
-    default-branch: main
-  - source-project: frontend-bff
-    scm-repo: my-org/frontend-bff
-    source-roots:
-      - src/main/kotlin/
-    default-branch: develop
-```
+**Example:** If your Sentry project slug is `my-backend` and the GitHub App is installed on the `my-org/my-backend` repository, the mapping happens automatically.
 
 ## External Service Setup
 
@@ -208,17 +182,32 @@ projects:
 >
 > Set `mangonaut.sentry.base-url` according to your organization's region.
 
-### GitHub
+### GitHub App
 
-1. **Create a Fine-grained Personal Access Token**
-   - GitHub > Settings > Developer settings > Fine-grained personal access tokens > **Generate new token**
-   - **Repository access**: Select target repositories
+1. **Create a GitHub App**
+   - GitHub > Settings > Developer settings > GitHub Apps > **New GitHub App**
+   - **Homepage URL**: Your deployment URL
+   - **Webhook**: Uncheck "Active" (Mangonaut doesn't use GitHub webhooks)
    - **Repository permissions**:
      - `Contents`: **Read and Write** (for branch creation and file commits)
      - `Pull requests`: **Read and Write** (for PR creation)
+     - `Metadata`: **Read-only** (required for repository listing)
 
-2. **Set Environment Variable**
-   - `MANGONAUT_GITHUB_TOKEN`: The generated PAT
+2. **Generate a Private Key**
+   - In the App settings page, scroll to **Private keys** > **Generate a private key**
+   - Base64-encode the downloaded `.pem` file:
+     ```bash
+     base64 -i your-app-name.pem | tr -d '\n'
+     ```
+
+3. **Install the App**
+   - In the App settings page, click **Install App**
+   - Select the organization/account and choose the repositories to monitor
+
+4. **Set Environment Variables**
+   - `MANGONAUT_GITHUB_APP_ID`: The **App ID** (found in the App settings page)
+   - `MANGONAUT_GITHUB_INSTALLATION_ID`: The **Installation ID** (found in the URL after installing: `https://github.com/settings/installations/{id}`)
+   - `MANGONAUT_GITHUB_PRIVATE_KEY`: The Base64-encoded private key from step 2
 
 ### Anthropic (Claude)
 
@@ -258,7 +247,7 @@ ngrok http 8080
 | Build | Gradle Kotlin DSL |
 | LLM | Claude API (Anthropic) |
 | Error Source | Sentry API |
-| SCM | GitHub API |
+| SCM | GitHub API (GitHub App) |
 | Test | Kotest 6.0.0.M2, MockK 1.14.2 |
 
 ## License
