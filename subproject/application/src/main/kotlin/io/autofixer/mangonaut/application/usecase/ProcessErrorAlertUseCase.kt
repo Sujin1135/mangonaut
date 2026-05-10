@@ -49,12 +49,25 @@ class ProcessErrorAlertUseCase(
 
         val errorEvent = errorSourcePort.fetchEvent(params.issueId)
 
+        logger.info(
+            "Fetched error event: issueId={}, errorType={}",
+            errorEvent.id.value,
+            errorEvent.errorType.value,
+        )
+
         val fixResult = analyzeErrorUseCase(
             AnalyzeErrorUseCase.Params(
                 errorEvent = errorEvent,
                 repoId = RepoId.of(mapping.scmRepo),
                 defaultBranch = mapping.defaultBranch,
             )
+        )
+
+        logger.info(
+            "Analysis result: issueId={}, confidence={}, changes={}",
+            errorEvent.id.value,
+            fixResult.confidence,
+            fixResult.changes.size,
         )
 
         if (!mapping.autoPr) {

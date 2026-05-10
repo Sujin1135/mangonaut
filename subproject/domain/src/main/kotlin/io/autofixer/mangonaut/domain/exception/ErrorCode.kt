@@ -14,6 +14,7 @@ enum class ErrorCode(
     GITHUB_FILE_NOT_FOUND("GITHUB_002", "GitHub file not found"),
     GITHUB_BRANCH_EXISTS("GITHUB_003", "Branch already exists"),
     GITHUB_PR_CREATE_FAILED("GITHUB_004", "PR creation failed"),
+    GITHUB_NO_COMMITTABLE_CHANGES("GITHUB_005", "No committable changes after path resolution guard"),
 
     // LLM
     LLM_API_ERROR("LLM_001", "LLM API call failed"),

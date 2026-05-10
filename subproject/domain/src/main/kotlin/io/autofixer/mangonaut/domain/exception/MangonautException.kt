@@ -63,3 +63,14 @@ data class ResourceNotFoundException(
     override val message: String,
     override val cause: Throwable? = null,
 ) : MangonautException(ErrorCode.RESOURCE_NOT_FOUND, message, cause)
+
+/**
+ * Sentinel exception thrown when commitFiles has no committable changes
+ * remaining after applying the path-resolution guard (every change was skipped).
+ *
+ * Lets callers distinguish "no work was committed" from a successful commit so
+ * they can avoid creating an empty branch/PR (which GitHub rejects with 422).
+ */
+data class NoCommittableChangesException(
+    override val message: String,
+) : MangonautException(ErrorCode.GITHUB_NO_COMMITTABLE_CHANGES, message)
