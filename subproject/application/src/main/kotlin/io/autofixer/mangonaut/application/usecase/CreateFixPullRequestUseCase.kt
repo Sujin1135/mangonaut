@@ -86,6 +86,10 @@ class CreateFixPullRequestUseCase(
             labels = params.labels.map { PrParams.Label(it) },
         )
 
-        return scmProviderPort.createPullRequest(params.repoId, prParams)
+        val pr = scmProviderPort.createPullRequest(params.repoId, prParams)
+
+        logger.info("PR created: url={}", pr.htmlUrl.value)
+
+        return pr
     }
 }

@@ -1,22 +1,26 @@
 package io.autofixer.mangonaut.application.usecase
 
-import io.autofixer.mangonaut.domain.model.Confidence
 import io.autofixer.mangonaut.domain.model.ErrorEvent
 import io.autofixer.mangonaut.domain.model.PrResult
 import io.autofixer.mangonaut.domain.model.RepoId
 import io.autofixer.mangonaut.domain.port.ErrorSourcePort
+import io.autofixer.mangonaut.domain.port.ProjectMappingPort
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 
 /**
  * Use Case that orchestrates the entire error alert processing pipeline.
  *
- * 1. Fetch detailed event from the error source
- * 2. Perform error analysis
- * 3. Create PR (based on configuration)
+ * 1. Resolve project mapping
+ * 2. Fetch detailed event from the error source
+ * 3. Perform error analysis
+ * 4. Create PR (based on mapping configuration)
+ *
+ * Returns `null` when no mapping is configured for the source project.
  */
 @Service
 class ProcessErrorAlertUseCase(
+    private val projectMappingPort: ProjectMappingPort,
     private val errorSourcePort: ErrorSourcePort,
     private val analyzeErrorUseCase: AnalyzeErrorUseCase,
     private val createFixPullRequestUseCase: CreateFixPullRequestUseCase,
@@ -26,12 +30,6 @@ class ProcessErrorAlertUseCase(
     data class Params(
         val issueId: ErrorEvent.Id,
         val sourceProject: ErrorEvent.SourceProject,
-        val repoId: RepoId,
-        val defaultBranch: String,
-        val branchPrefix: String,
-        val labels: List<String>,
-        val minConfidence: Confidence,
-        val autoPr: Boolean,
     )
 
     data class Result(
@@ -40,51 +38,41 @@ class ProcessErrorAlertUseCase(
         val prResult: PrResult?,
     )
 
-    /**
-     * Processes an error alert.
-     */
-    suspend operator fun invoke(params: Params): Result {
+    suspend operator fun invoke(params: Params): Result? {
         logger.info("Processing error alert: issueId={}, project={}", params.issueId.value, params.sourceProject.value)
 
-        // 1. Fetch error details
-        val errorEvent = errorSourcePort.fetchEvent(params.issueId)
-        logger.info("Fetched error event: title={}", errorEvent.title.value)
+        val mapping = projectMappingPort(ProjectMappingPort.Params(params.sourceProject))
+        if (mapping == null) {
+            logger.info("No mapping configured for project: {}", params.sourceProject.value)
+            return null
+        }
 
-        // 2. Analyze error
+        val errorEvent = errorSourcePort.fetchEvent(params.issueId)
+
         val fixResult = analyzeErrorUseCase(
             AnalyzeErrorUseCase.Params(
                 errorEvent = errorEvent,
-                repoId = params.repoId,
-                defaultBranch = params.defaultBranch,
+                repoId = RepoId.of(mapping.scmRepo),
+                defaultBranch = mapping.defaultBranch,
             )
-        )
-        logger.info(
-            "Analysis completed: confidence={}, changes={}",
-            fixResult.confidence,
-            fixResult.changes.size,
         )
 
-        // 3. Create PR (based on configuration)
-        val prResult = if (params.autoPr) {
-            createFixPullRequestUseCase(
-                CreateFixPullRequestUseCase.Params(
-                    errorEvent = errorEvent,
-                    fixResult = fixResult,
-                    repoId = params.repoId,
-                    defaultBranch = params.defaultBranch,
-                    branchPrefix = params.branchPrefix,
-                    labels = params.labels,
-                    minConfidence = params.minConfidence,
-                )
-            )
-        } else {
+        if (!mapping.autoPr) {
             logger.info("Auto PR disabled, skipping PR creation")
-            null
+            return null
         }
 
-        prResult?.let {
-            logger.info("PR created: url={}", it.htmlUrl.value)
-        }
+        val prResult = createFixPullRequestUseCase(
+            CreateFixPullRequestUseCase.Params(
+                errorEvent = errorEvent,
+                fixResult = fixResult,
+                repoId = RepoId.of(mapping.scmRepo),
+                defaultBranch = mapping.defaultBranch,
+                branchPrefix = mapping.branchPrefix,
+                labels = mapping.labels,
+                minConfidence = mapping.minConfidence,
+            )
+        )
 
         return Result(
             errorEvent = errorEvent,

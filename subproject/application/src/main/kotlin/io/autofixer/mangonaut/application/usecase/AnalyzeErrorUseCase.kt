@@ -6,6 +6,7 @@ import io.autofixer.mangonaut.domain.model.RepoId
 import io.autofixer.mangonaut.domain.model.StackFrame
 import io.autofixer.mangonaut.domain.port.LlmProviderPort
 import io.autofixer.mangonaut.domain.port.ScmProviderPort
+import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 
 /**
@@ -20,6 +21,8 @@ class AnalyzeErrorUseCase(
     private val scmProviderPort: ScmProviderPort,
     private val llmProviderPort: LlmProviderPort,
 ) {
+    private val logger = LoggerFactory.getLogger(javaClass)
+
     data class Params(
         val errorEvent: ErrorEvent,
         val repoId: RepoId,
@@ -43,11 +46,19 @@ class AnalyzeErrorUseCase(
             ref = params.defaultBranch,
         )
 
-        // Analyze via LLM
-        return llmProviderPort.analyzeError(
+        val fixResult = llmProviderPort.analyzeError(
             errorEvent = errorEvent,
             sourceFiles = sourceFiles,
         )
+
+        logger.info(
+            "Analysis completed: confidence={}, changes={}",
+            fixResult.confidence,
+            fixResult.changes.size,
+        )
+
+        // Analyze via LLM
+        return fixResult
     }
 
     /**

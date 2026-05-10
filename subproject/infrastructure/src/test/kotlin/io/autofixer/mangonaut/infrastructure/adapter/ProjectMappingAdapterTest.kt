@@ -1,6 +1,8 @@
-package io.autofixer.mangonaut.infrastructure.service
+package io.autofixer.mangonaut.infrastructure.adapter
 
 import io.autofixer.mangonaut.domain.model.Confidence
+import io.autofixer.mangonaut.domain.model.ErrorEvent
+import io.autofixer.mangonaut.domain.port.ProjectMappingPort
 import io.autofixer.mangonaut.infrastructure.config.BehaviorProperties
 import io.autofixer.mangonaut.infrastructure.config.GitHubInstallationRepositoryClient
 import io.autofixer.mangonaut.infrastructure.config.InstalledRepository
@@ -13,11 +15,13 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
 
-class ProjectMappingServiceImplTest : BehaviorSpec({
+class ProjectMappingAdapterTest : BehaviorSpec({
 
     val repositoryClient = mockk<GitHubInstallationRepositoryClient>()
 
-    context("findMapping") {
+    fun paramsFor(slug: String) = ProjectMappingPort.Params(ErrorEvent.SourceProject(slug))
+
+    context("invoke") {
         given("a static config matching the source project") {
             val properties = MangonautProperties(
                 projects = listOf(
@@ -29,10 +33,10 @@ class ProjectMappingServiceImplTest : BehaviorSpec({
                 ),
                 behavior = BehaviorProperties(),
             )
-            val service = ProjectMappingServiceImpl(properties, repositoryClient)
+            val adapter = ProjectMappingAdapter(properties, repositoryClient)
 
-            `when`("finding mapping for 'my-app'") {
-                val mapping = service.findMapping("my-app")
+            `when`("invoking with 'my-app'") {
+                val mapping = adapter(paramsFor("my-app"))
 
                 then("should return the static config values") {
                     mapping!!.scmRepo shouldBe "org/my-app-custom"
@@ -54,7 +58,7 @@ class ProjectMappingServiceImplTest : BehaviorSpec({
                     autoPr = true,
                 ),
             )
-            val service = ProjectMappingServiceImpl(properties, repositoryClient)
+            val adapter = ProjectMappingAdapter(properties, repositoryClient)
 
             every { repositoryClient.getRepositories() } returns listOf(
                 InstalledRepository(
@@ -65,8 +69,8 @@ class ProjectMappingServiceImplTest : BehaviorSpec({
                 ),
             )
 
-            `when`("finding mapping for 'my-service'") {
-                val mapping = service.findMapping("my-service")
+            `when`("invoking with 'my-service'") {
+                val mapping = adapter(paramsFor("my-service"))
 
                 then("should return values from the GitHub API response") {
                     mapping!!.scmRepo shouldBe "org/my-service"
@@ -76,7 +80,7 @@ class ProjectMappingServiceImplTest : BehaviorSpec({
                 then("should include behavior properties") {
                     mapping!!.branchPrefix shouldBe "fix/mangonaut-"
                     mapping.labels shouldBe listOf("auto-fix")
-                    mapping.minConfidence shouldBe "MEDIUM"
+                    mapping.minConfidence shouldBe Confidence.MEDIUM
                     mapping.autoPr shouldBe true
                 }
             }
@@ -84,7 +88,7 @@ class ProjectMappingServiceImplTest : BehaviorSpec({
 
         given("no static config and no matching GitHub repository") {
             val properties = MangonautProperties()
-            val service = ProjectMappingServiceImpl(properties, repositoryClient)
+            val adapter = ProjectMappingAdapter(properties, repositoryClient)
 
             every { repositoryClient.getRepositories() } returns listOf(
                 InstalledRepository(
@@ -95,8 +99,8 @@ class ProjectMappingServiceImplTest : BehaviorSpec({
                 ),
             )
 
-            `when`("finding mapping for 'unknown-project'") {
-                val mapping = service.findMapping("unknown-project")
+            `when`("invoking with 'unknown-project'") {
+                val mapping = adapter(paramsFor("unknown-project"))
 
                 then("should return null") {
                     mapping.shouldBeNull()
