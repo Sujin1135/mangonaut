@@ -9,6 +9,8 @@ When a Sentry Webhook is received, it extracts the error's stack trace and relat
 
 ## How It Works
 
+Mangonaut uses an **agentic loop** where Claude actively explores the repository through tool calls, rather than receiving a pre-fetched bundle of files. The model decides what to read, what to search, and which fix to propose — much like a developer investigating a bug.
+
 ```mermaid
 sequenceDiagram
     participant Sentry
@@ -20,20 +22,25 @@ sequenceDiagram
     Note over Mangonaut: HMAC-SHA256 Signature Verification
     Note over Mangonaut: Auto-match Sentry slug<br/>to GitHub App installed repo
     Mangonaut->>Sentry: GET /api/0/issues/{id}/events/latest/
-    Sentry-->>Mangonaut: Error Event (stack trace, breadcrumbs)
+    Sentry-->>Mangonaut: Error Event (full stack trace, breadcrumbs, tags)
 
-    Mangonaut->>GitHub: GET /repos/{owner}/{repo}/git/trees/{ref}?recursive=1
-    GitHub-->>Mangonaut: Repository File Tree
-    Note over Mangonaut: Resolve stacktrace filenames<br/>to actual repo paths
+    Mangonaut->>Claude: Initial prompt (errorEvent + tool definitions)
 
-    Mangonaut->>GitHub: GET /repos/{owner}/{repo}/contents/{path}
-    GitHub-->>Mangonaut: Source File Content
+    loop Agent Loop (up to 25 iterations)
+        Claude-->>Mangonaut: tool_use (read_file / list_directory / search_code)
+        Mangonaut->>GitHub: Contents / Tree / Search API
+        GitHub-->>Mangonaut: File content / Tree entries / Matches
+        Mangonaut->>Claude: tool_result
+        Note over Claude: Reasons over results,<br/>follows imports, narrows root cause
+        Claude-->>Mangonaut: tool_use (propose_fix)
+        Note over Mangonaut: Immediate validation:<br/>file in cache + original snippet<br/>matches exactly once
+    end
 
-    Mangonaut->>Claude: Analyze Error + Source Code
-    Claude-->>Mangonaut: Fix Result (analysis, code changes)
+    Claude-->>Mangonaut: tool_use (finish: summary, prTitle, prBody, confidence)
 
     Mangonaut->>GitHub: Create Branch
-    Mangonaut->>GitHub: Commit File Changes
+    Note over Mangonaut: commitFiles guards:<br/>full-path re-resolution +<br/>find-and-replace + sha required
+    Mangonaut->>GitHub: Commit File Changes (snippet-level edits)
     Mangonaut->>GitHub: Create Pull Request
     GitHub-->>Mangonaut: PR URL
 ```
@@ -41,10 +48,11 @@ sequenceDiagram
 ## Features
 
 - **Sentry Webhook Integration** - Receives errors instantly via Webhook with HMAC-SHA256 signature verification for security
-- **AI-Powered Error Analysis** - Leverages Claude API to analyze root causes and generate code fix suggestions
+- **Agentic Code Exploration** - Claude actively navigates the repository via `read_file`, `list_directory`, and `search_code` tool calls, following imports and tracing call sites just like a developer investigating a bug
+- **Snippet-Level Edits** - Applies fixes via find-and-replace on the original snippet so the rest of the file (imports, unrelated methods, package declaration) is preserved
+- **Multi-Layer Safety Guards** - Hallucinated paths are blocked, ambiguous matches are skipped, sha-absent writes are rejected, and proposed fixes are validated immediately and again at commit time
 - **Automated PR Creation** - Creates fix branches and Pull Requests on GitHub based on analysis results
 - **Dynamic Project Mapping** - Automatically maps Sentry project slugs to GitHub repositories via GitHub App installation, with no manual configuration needed
-- **Language-Agnostic File Resolution** - Dynamically resolves stacktrace filenames to actual repository paths using the Git Tree API, supporting any language or project structure
 - **Confidence-Based Filtering** - Controls automatic PR creation based on LLM analysis confidence level (HIGH/MEDIUM/LOW)
 - **Async Processing** - Returns 200 OK immediately upon Webhook receipt, then processes analysis and PR creation asynchronously
 - **DDD Layered Architecture** - Clean separation of Domain, Application, Presentation, and Infrastructure layers
@@ -66,7 +74,7 @@ mangonaut/
 | **Domain** | Domain models, port definitions | `ErrorEvent`, `FixResult`, `ErrorSourcePort`, `ScmProviderPort`, `LlmProviderPort` |
 | **Application** | Use case orchestration | `ProcessErrorAlertUseCase`, `AnalyzeErrorUseCase`, `CreateFixPullRequestUseCase` |
 | **Presentation** | HTTP request/response handling | `SentryWebhookController`, `GlobalExceptionHandler`, `WebhookVerificationService` |
-| **Infrastructure** | External system integration | `SentryErrorSourceAdapter`, `GitHubScmAdapter`, `ClaudeLlmAdapter`, `GitHubInstallationRepositoryClient` |
+| **Infrastructure** | External system integration | `SentryErrorSourceAdapter`, `GitHubScmAdapter`, `ClaudeAgenticLlmAdapter`, `GitHubInstallationRepositoryClient` |
 
 ## Getting Started
 

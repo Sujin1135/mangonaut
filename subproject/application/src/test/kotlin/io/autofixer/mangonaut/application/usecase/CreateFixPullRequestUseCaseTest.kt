@@ -1,5 +1,6 @@
 package io.autofixer.mangonaut.application.usecase
 
+import io.autofixer.mangonaut.domain.exception.NoCommittableChangesException
 import io.autofixer.mangonaut.domain.model.Confidence
 import io.autofixer.mangonaut.domain.model.FileChange
 import io.autofixer.mangonaut.domain.model.PrParams
@@ -129,6 +130,27 @@ class CreateFixPullRequestUseCaseTest : BehaviorSpec({
                     result.shouldBeNull()
 
                     coVerify(exactly = 0) { scmProviderPort.createBranch(any(), any(), any()) }
+                    coVerify(exactly = 0) { scmProviderPort.createPullRequest(any(), any()) }
+                }
+            }
+        }
+
+        given("commitFiles throws NoCommittableChangesException (all changes skipped by guard)") {
+            `when`("the use case is invoked") {
+                then("should return null and not create the PR") {
+                    val scmProviderPort = mockk<ScmProviderPort>(relaxUnitFun = true)
+                    coEvery { scmProviderPort.hasOpenPR(any(), any()) } returns false
+                    coEvery {
+                        scmProviderPort.commitFiles(any(), any(), any(), any())
+                    } throws NoCommittableChangesException("all changes skipped")
+
+                    val (useCase, params) = createParams(scmProviderPort)
+                    val result = useCase(params)
+
+                    result.shouldBeNull()
+
+                    coVerify(exactly = 1) { scmProviderPort.createBranch(any(), any(), any()) }
+                    coVerify(exactly = 1) { scmProviderPort.commitFiles(any(), any(), any(), any()) }
                     coVerify(exactly = 0) { scmProviderPort.createPullRequest(any(), any()) }
                 }
             }

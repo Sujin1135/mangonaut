@@ -11,6 +11,7 @@ import io.autofixer.mangonaut.domain.model.StackFrame
 import io.autofixer.mangonaut.domain.port.ErrorSourcePort
 import io.autofixer.mangonaut.infrastructure.config.MangonautProperties
 import kotlinx.coroutines.reactor.awaitSingle
+import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.WebClientResponseException
@@ -24,6 +25,7 @@ class SentryErrorSourceAdapter(
     private val sentryWebClient: WebClient,
     private val properties: MangonautProperties,
 ) : ErrorSourcePort {
+    private val logger = LoggerFactory.getLogger(javaClass)
 
     override val name: String = "sentry"
 
@@ -36,7 +38,10 @@ class SentryErrorSourceAdapter(
                 .bodyToMono(SentryEventResponse::class.java)
                 .awaitSingle()
 
-            return response.toDomain(issueId)
+            val errorEvent = response.toDomain(issueId)
+            logger.info("Fetched error event: title={}", errorEvent.title.value)
+
+            return errorEvent
         } catch (e: WebClientResponseException) {
             throw SentryApiException(
                 message = "Failed to fetch event from Sentry: ${e.statusCode} - ${e.responseBodyAsString}",

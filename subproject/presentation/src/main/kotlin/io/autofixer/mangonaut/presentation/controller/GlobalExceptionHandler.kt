@@ -5,6 +5,7 @@ import io.autofixer.mangonaut.domain.exception.DuplicateProcessingException
 import io.autofixer.mangonaut.domain.exception.GitHubApiException
 import io.autofixer.mangonaut.domain.exception.LlmApiException
 import io.autofixer.mangonaut.domain.exception.MangonautException
+import io.autofixer.mangonaut.domain.exception.NoCommittableChangesException
 import io.autofixer.mangonaut.domain.exception.ResourceNotFoundException
 import io.autofixer.mangonaut.domain.exception.SentryApiException
 import io.autofixer.mangonaut.domain.exception.WebhookValidationException
@@ -30,6 +31,7 @@ class GlobalExceptionHandler {
             is SentryApiException -> HttpStatus.BAD_GATEWAY
             is GitHubApiException -> HttpStatus.BAD_GATEWAY
             is LlmApiException -> HttpStatus.BAD_GATEWAY
+            is NoCommittableChangesException -> HttpStatus.UNPROCESSABLE_ENTITY
         }
 
         if (status.is5xxServerError) {
