@@ -2,6 +2,7 @@ package io.autofixer.mangonaut.application.usecase
 
 import io.autofixer.mangonaut.domain.model.ErrorEvent
 import io.autofixer.mangonaut.domain.model.FixResult
+import io.autofixer.mangonaut.domain.model.RepoId
 import io.autofixer.mangonaut.domain.model.StackFrame
 import io.autofixer.mangonaut.domain.port.LlmProviderPort
 import io.autofixer.mangonaut.domain.port.ScmProviderPort
@@ -21,7 +22,7 @@ class AnalyzeErrorUseCase(
 ) {
     data class Params(
         val errorEvent: ErrorEvent,
-        val repoId: io.autofixer.mangonaut.domain.model.RepoId,
+        val repoId: RepoId,
         val defaultBranch: String,
     )
 
